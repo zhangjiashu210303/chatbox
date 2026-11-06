@@ -359,14 +359,14 @@
 
   function chatsFromIssues(items) {
     return items
-      .filter((i) => i.title.startsWith(CHAT_PREFIX))
+      .filter((i) => i.state !== 'closed' && i.title.startsWith(CHAT_PREFIX))
       .map((i) => ({ issue: i, chat: decodeBody(i.body, MARK.chat) }))
       .filter((x) => x.chat && Array.isArray(x.chat.members));
   }
 
   function momentsFromIssues(items) {
     return items
-      .filter((i) => i.title.startsWith(MOMENT_PREFIX))
+      .filter((i) => i.state !== 'closed' && i.title.startsWith(MOMENT_PREFIX))
       .map((i) => ({ issue: i, moment: decodeBody(i.body, MARK.moment) }))
       .filter((x) => x.moment);
   }
