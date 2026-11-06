@@ -58,5 +58,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n  微信网页版（静态版）已在本地启动\n  ➜  http://localhost:${PORT}\n`);
+  console.log(`\n  ChatBox 已在本地启动\n  ➜  http://localhost:${PORT}\n`);
 });

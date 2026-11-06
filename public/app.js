@@ -1,7 +1,7 @@
 'use strict';
 
 /* ============================================================
-   类微信网页版 · 前端逻辑
+   ChatBox · 前端逻辑
    ============================================================ */
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -26,7 +26,8 @@ const AVATAR_CHOICES = ['😀', '😎', '🐱', '🐶', '🦊', '🐼', '🐨', 
 
 const COLOR_CHOICES = ['#5b8def', '#3b82f6', '#06b6d4', '#10b981', '#22c55e', '#84cc16', '#f59e0b', '#f97316', '#ef4444', '#ec4899', '#8b5cf6', '#6366f1', '#14b8a6', '#64748b'];
 
-const IS_STATIC = !!window.LocalAPI;
+const IS_CLOUD = !!window.CloudAPI;
+const IS_STATIC = !IS_CLOUD && !!window.LocalAPI;
 // 静态模式下用 sessionStorage：多个标签页可以分别登录不同账号做聊天演示
 const tokenStore = (() => {
   try {
@@ -147,6 +148,15 @@ function toast(message, type = '') {
 /* ---------------------------- API ---------------------------- */
 
 async function api(path, { method = 'GET', body, token = state.token } = {}) {
+  if (IS_CLOUD) {
+    try {
+      return await window.CloudAPI.request(path, { method, body: body === undefined ? {} : body, token });
+    } catch (err) {
+      if (err.status === 401 && state.token) endSession(true);
+      throw err;
+    }
+  }
+
   if (IS_STATIC) {
     try {
       return await window.LocalAPI.request(path, { method, body: body === undefined ? {} : body, token });
@@ -217,7 +227,7 @@ function endSession(silent = false) {
     clearInterval(state.heartbeat);
     state.heartbeat = null;
   }
-  document.title = '微信网页版';
+  document.title = 'ChatBox';
   $('#appView').classList.add('hidden');
   $('#authView').classList.remove('hidden');
   $('#loginForm').reset();
@@ -232,6 +242,10 @@ function beginSession(token, user) {
   $('#authView').classList.add('hidden');
   $('#appView').classList.remove('hidden');
   renderMeBits();
+  if (IS_CLOUD) {
+    const imageBtn = $('#imageBtn');
+    if (imageBtn) imageBtn.classList.add('hidden');
+  }
   switchTab('chats');
   refreshChats();
   refreshContacts();
@@ -456,8 +470,8 @@ function switchTab(tab) {
   $('#searchInput').value = '';
   $$('.rail-btn[data-tab]').forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
 
-  const titles = { chats: '微信', contacts: '通讯录', discover: '发现', me: '我' };
-  $('#panelTitle').textContent = titles[tab] || '微信';
+  const titles = { chats: 'ChatBox', contacts: '通讯录', discover: '发现', me: '我' };
+  $('#panelTitle').textContent = titles[tab] || 'ChatBox';
   const search = $('#searchInput');
   search.parentElement.classList.toggle('hidden', tab === 'discover' || tab === 'me');
   search.placeholder = tab === 'contacts' ? '搜索联系人' : '搜索';
@@ -634,7 +648,7 @@ function updateBadges() {
   const badge = $('#railUnread');
   badge.textContent = total > 99 ? '99+' : String(total);
   badge.classList.toggle('hidden', total === 0);
-  document.title = total ? `(${total > 99 ? '99+' : total}) 微信` : '微信网页版';
+  document.title = total ? `(${total > 99 ? '99+' : total}) ChatBox` : 'ChatBox';
 }
 
 /* ---------------------------- 会话与消息 ---------------------------- */
@@ -877,6 +891,16 @@ async function handleImagePick(e) {
 function connectEvents() {
   if (!state.token) return;
 
+  if (IS_CLOUD) {
+    if (state.busOff) state.busOff();
+    state.busOff = window.CloudAPI.subscribe((payload) => {
+      if (payload.for && state.me && payload.for !== state.me.id) return;
+      handleEvent(payload);
+    });
+    handleEvent({ type: 'hello', online: window.CloudAPI.onlineIds() });
+    return;
+  }
+
   if (IS_STATIC) {
     if (state.busOff) state.busOff();
     state.busOff = window.LocalAPI.subscribe((payload) => {
@@ -990,6 +1014,24 @@ function handleEvent(payload) {
         state.moments.unshift(payload.moment);
         if (state.tab === 'discover' && !state.momentsLoading) renderMomentsPage();
       }
+      break;
+    }
+    case 'cloud:refresh': {
+      refreshChats();
+      refreshContacts();
+      if (state.currentChatId) {
+        const chatId = state.currentChatId;
+        api(`/api/chats/${chatId}/messages?limit=200`)
+          .then((data) => {
+            if (state.currentChatId !== chatId) return;
+            state.messages[chatId] = data.messages;
+            replaceChat(data.chat);
+            renderChatHeader(data.chat);
+            renderMessages();
+          })
+          .catch(() => {});
+      }
+      if (state.tab === 'discover') loadMoments();
       break;
     }
     default:

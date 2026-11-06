@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#07c160">
-  <title>微信网页版</title>
+  <title>ChatBox</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%2307c160'/><path d='M50 22c-16 0-29 10.6-29 23.7 0 7.5 4.3 14.2 11 18.6l-2.8 8.5 9.9-4.8c3.4 1 7.1 1.5 10.9 1.5 16 0 29-10.6 29-23.8S66 22 50 22z' fill='white'/></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -41,8 +41,8 @@
           <svg viewBox="0 0 100 100"><use href="#i-logo"/></svg>
         </div>
         <div class="brand-text">
-          <h1>微信网页版</h1>
-          <p>和好友保持联系</p>
+          <h1>ChatBox</h1>
+          <p>基于 GitHub Issues 的真实聊天</p>
         </div>
       </div>
 
@@ -62,7 +62,7 @@
         </label>
         <p class="form-error" id="loginError"></p>
         <button class="btn-primary" type="submit">登 录</button>
-        <p class="auth-hint">演示账号：<b>xiaoming</b> / <b>123456</b><br><span class="auth-hint-sub">多开一个标签页可登录另一个账号聊天</span></p>
+        <p class="auth-hint">演示账号：<b>xiaoming</b> / <b>xiaohong</b> / <b>ajie</b><br><span class="auth-hint-sub">密码均为 <b>123456</b> · 消息通过 GitHub Issues 云端同步</span></p>
       </form>
 
       <form class="auth-form hidden" id="registerForm" autocomplete="off">
@@ -87,7 +87,7 @@
         <p class="auth-hint">注册后会自动生成头像，可在「我」中修改</p>
       </form>
 
-      <p class="auth-foot">纯静态页面 · 账号和消息保存在当前浏览器</p>
+      <p class="auth-foot">云端同步 · 账号和消息存储在 GitHub Issues（公开可见）</p>
     </div>
   </div>
 
@@ -122,7 +122,7 @@
     <section class="panel">
       <header class="panel-head">
         <div class="panel-top">
-          <h2 id="panelTitle">微信</h2>
+          <h2 id="panelTitle">ChatBox</h2>
           <button class="icon-btn" id="newChatBtn" title="发起群聊">
             <svg viewBox="0 0 24 24"><use href="#i-plus"/></svg>
           </button>
@@ -193,6 +193,7 @@
   <div class="toast-wrap" id="toastWrap"></div>
 
   <script src="localapi.js"></script>
+  <script src="cloud.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

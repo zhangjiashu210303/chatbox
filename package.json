@@ -1,12 +1,12 @@
 {
-  "name": "wechat-web",
-  "version": "2.0.0",
+  "name": "chatbox",
+  "version": "3.0.0",
   "private": true,
-  "description": "类微信网页版：注册、登录、单聊、群聊、朋友圈，纯静态可部署到 GitHub Pages",
+  "description": "ChatBox：使用 GitHub Issues 作为后端的类微信网页聊天应用，纯静态部署到 GitHub Pages",
   "main": "preview.js",
   "scripts": {
     "start": "node preview.js"
   },
-  "keywords": ["wechat", "chat", "github-pages", "vanilla-js"],
+  "keywords": ["chatbox", "chat", "github-issues", "github-pages", "vanilla-js"],
   "license": "MIT"
 }

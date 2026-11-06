@@ -1,40 +1,28 @@
-# 微信网页版（纯静态）
+# ChatBox
 
 一个**类微信**的网页聊天应用，使用原生 HTML / CSS / JavaScript 编写，**零依赖、纯静态**，可以直接部署到 **GitHub Pages**。
 
 > 在线体验：<https://zhangjiashu210303.github.io/chatbox/>
 
-## ✨ 功能
+## ✨ 特点
 
-- 👤 **注册 / 登录**：账号密码使用 PBKDF2 加密后保存在浏览器中
-- 💬 **单聊**：从通讯录选择好友，实时收发消息
-- 👥 **群聊**：选择多位联系人创建群聊，支持群昵称发送者展示
+- ☁️ **真实云端互动**：账号、聊天、朋友圈全部存储在 **GitHub Issues** 中，换设备、换浏览器也能继续聊
+- 👤 **注册 / 登录**：密码使用 PBKDF2 加盐哈希后保存
+- 💬 **单聊**：从通讯录选择好友，消息以 Issue 评论的形式实时同步
+- 👥 **群聊**：选择多位联系人创建群聊
 - 🌿 **朋友圈**：发布动态、点赞、评论
-- 🖼 **图片消息**：自动压缩后发送，点击可放大预览
-- 😊 **表情面板**、消息未读数、在线状态、会话搜索
+- 😊 **表情面板**、未读数、会话搜索、在线状态
 - 📱 **响应式布局**：桌面端三栏，手机端底部导航 + 全屏聊天
-- 🔄 **多标签页实时同步**：通过 `BroadcastChannel` 即时推送新消息
-- 🎨 **个人资料**：修改头像、头像底色、昵称、个性签名
+- 🔄 **自动刷新**：每 6 秒通过带 ETag 的 GitHub API 轮询，有新内容时自动更新
 
 ## 🚀 部署到 GitHub Pages
 
-### 方式一：GitHub Actions（推荐，仓库已内置工作流）
+仓库已内置 GitHub Actions 工作流，推送到 `main` 即可自动发布 `public/`：
 
-1. 把代码推送到仓库的 `main` 分支：
-   ```bash
-   git remote add origin https://github.com/zhangjiashu210303/chatbox.git
-   git branch -M main
-   git push -u origin main
-   ```
-2. 打开仓库 **Settings → Pages**，将 **Build and deployment → Source** 设为 **GitHub Actions**
-3. 推送后会自动运行 `Deploy to GitHub Pages` 工作流
-4. 部署完成后访问：`https://zhangjiashu210303.github.io/chatbox/`
-
-> `.github/workflows/deploy.yml` 会发布 `public/` 目录。
-
-### 方式二：从分支发布
-
-在 **Settings → Pages** 中选择 **Deploy from a branch**，分支选 `main`，目录选 `/public` 即可。
+1. 打开仓库 **Settings → Pages**，将 **Build and deployment → Source** 设为 **GitHub Actions**
+2. 推送到 `main` 分支
+3. 等待 `Deploy to GitHub Pages` 工作流完成
+4. 访问 `https://zhangjiashu210303.github.io/chatbox/`
 
 ## 💻 本地运行
 
@@ -46,14 +34,6 @@ node preview.js
 
 打开 <http://localhost:3000>。
 
-也可以使用任意静态服务器，例如：
-
-```bash
-npx serve public
-```
-
-> 请通过 `http://localhost` 或 `https://` 访问，这样浏览器才会启用 Web Crypto（密码加密）。直接双击 `index.html` 也能打开，但会降级为简单哈希。
-
 ## 🧪 演示账号
 
 | 账号 | 密码 |
@@ -62,15 +42,27 @@ npx serve public
 | `xiaohong` | `123456` |
 | `ajie` | `123456` |
 
-也可以直接注册新账号。
+也可以直接注册新账号。注册后换一台设备登录同一账号，就能看到相同的聊天记录。
 
-### 体验两个账号实时聊天
+## ☁️ 数据是怎么存的
 
-1. 在标签页 A 登录 `xiaoming`
-2. **新开一个标签页** B（不要复制标签页），登录 `xiaohong`
-3. 在任意一边发消息，另一边会实时收到
+所有数据都放在本仓库的 GitHub Issues 里：
 
-> 登录状态保存在 `sessionStorage`，所以同浏览器的不同标签页可以分别登录不同账号。
+| 数据 | 存储方式 |
+| --- | --- |
+| 账号注册表 | 标题为 `[ChatBox] registry` 的 Issue |
+| 聊天会话 | 标题为 `[ChatBox] chat:<id>` 的 Issue，成员、群名等保存在 body |
+| 聊天消息 | 对应聊天 Issue 的评论 |
+| 朋友圈 | 标题为 `[ChatBox] moment:<id>` 的 Issue，点赞和评论保存在 body |
+
+前端通过 GitHub REST API 读写 Issues，并使用 ETag 条件请求减少流量与配额消耗。
+
+## ⚠️ 重要说明
+
+- 这是一个**公开仓库**，GitHub Issues 的内容默认**公开可见**，请不要发送敏感信息。
+- 前端内置了一个只具备 **Issues 读写** 权限的 GitHub PAT，因此任何打开页面的人都能读写仓库的 Issues。这适合演示和轻量使用，不适合正式生产环境。
+- 云端模式**暂不支持图片消息**（GitHub Issue 评论长度有限）。
+- 若 GitHub API 触发限流，稍等片刻即可恢复。
 
 ## 📦 项目结构
 
@@ -80,22 +72,12 @@ chatbox/
 │   ├── index.html
 │   ├── style.css
 │   ├── app.js              # 页面交互逻辑
-│   └── localapi.js         # 本地 API：账号、消息、朋友圈
+│   ├── cloud.js            # GitHub Issues 云端后端
+│   └── localapi.js         # 本地 localStorage 后端（作为离线降级）
 ├── preview.js              # 本地预览用静态服务器（无需依赖）
 ├── .github/workflows/      # GitHub Pages 自动部署
 └── package.json
 ```
-
-## 🔐 数据说明
-
-- 所有数据保存在浏览器的 **localStorage** 中（键名 `wx_static_db_v1`），不会上传到任何服务器。
-- 图片会先压缩再以 data URL 形式保存，浏览器存储空间通常为 5MB 左右，请勿大量发送图片。
-- 清除浏览器数据会同时清除账号和聊天记录。
-- 换浏览器 / 换设备不会同步数据。
-
-## ⚠️ 说明
-
-这是一个前端演示项目：**账号与聊天数据只存在于当前浏览器**。如果需要真正跨设备、多人实时聊天，需要接入后端或云数据库（例如 Supabase、Firebase、自建 Node.js + WebSocket 服务）。
 
 ## 📄 License
 
