@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07c160">
+  <title>微信网页版</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%2307c160'/><path d='M50 22c-16 0-29 10.6-29 23.7 0 7.5 4.3 14.2 11 18.6l-2.8 8.5 9.9-4.8c3.4 1 7.1 1.5 10.9 1.5 16 0 29-10.6 29-23.8S66 22 50 22z' fill='white'/></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.9 9.9 0 0 1-3.8-.7L3 21l1.9-4.6A8.3 8.3 0 0 1 3.6 11.5a8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8.4 8.4Z"/></symbol>
+    <symbol id="i-contacts" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16.5 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01" stroke-width="2.4"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="m21 16-5-5L5 21"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1Z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m20 6-11 11-5-5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></symbol>
+    <symbol id="i-logo" viewBox="0 0 100 100"><path d="M50 16c-19 0-34 12.4-34 27.7 0 8.8 5 16.6 12.8 21.7l-3.2 10 11.6-5.6c3.9 1.2 8.2 1.7 12.8 1.7 19 0 34-12.4 34-27.8S69 16 50 16Z"/></symbol>
+  </svg>
+
+  <!-- ================= 登录 / 注册 ================= -->
+  <div class="auth" id="authView">
+    <div class="auth-deco auth-deco-1"></div>
+    <div class="auth-deco auth-deco-2"></div>
+    <div class="auth-deco auth-deco-3"></div>
+
+    <div class="auth-card">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 100 100"><use href="#i-logo"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>微信网页版</h1>
+          <p>和好友保持联系</p>
+        </div>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button class="auth-tab active" type="button" data-auth-tab="login">登录</button>
+        <button class="auth-tab" type="button" data-auth-tab="register">注册</button>
+      </div>
+
+      <form class="auth-form" id="loginForm" autocomplete="on">
+        <label class="auth-field">
+          <span>账号</span>
+          <input id="loginUsername" name="username" placeholder="请输入账号" maxlength="20" autocomplete="username" required>
+        </label>
+        <label class="auth-field">
+          <span>密码</span>
+          <input id="loginPassword" name="password" type="password" placeholder="请输入密码" maxlength="64" autocomplete="current-password" required>
+        </label>
+        <p class="form-error" id="loginError"></p>
+        <button class="btn-primary" type="submit">登 录</button>
+        <p class="auth-hint">演示账号：<b>xiaoming</b> / <b>123456</b><br><span class="auth-hint-sub">多开一个标签页可登录另一个账号聊天</span></p>
+      </form>
+
+      <form class="auth-form hidden" id="registerForm" autocomplete="off">
+        <label class="auth-field">
+          <span>账号</span>
+          <input id="regUsername" placeholder="2-20 位字母、数字或中文" maxlength="20" required>
+        </label>
+        <label class="auth-field">
+          <span>昵称</span>
+          <input id="regNickname" placeholder="别人看到的名字" maxlength="20" required>
+        </label>
+        <label class="auth-field">
+          <span>密码</span>
+          <input id="regPassword" type="password" placeholder="至少 6 位" maxlength="64" required>
+        </label>
+        <label class="auth-field">
+          <span>确认密码</span>
+          <input id="regPassword2" type="password" placeholder="再输入一次密码" maxlength="64" required>
+        </label>
+        <p class="form-error" id="registerError"></p>
+        <button class="btn-primary" type="submit">注册并登录</button>
+        <p class="auth-hint">注册后会自动生成头像，可在「我」中修改</p>
+      </form>
+
+      <p class="auth-foot">纯静态页面 · 账号和消息保存在当前浏览器</p>
+    </div>
+  </div>
+
+  <!-- ================= 主应用 ================= -->
+  <div class="app hidden" id="appView">
+    <aside class="rail">
+      <button class="rail-me" id="railMe" title="我">
+        <span class="avatar avatar-sm" id="railAvatar"></span>
+      </button>
+      <nav class="rail-nav">
+        <button class="rail-btn active" data-tab="chats" title="聊天">
+          <svg viewBox="0 0 24 24"><use href="#i-chat"/></svg>
+          <span class="rail-badge hidden" id="railUnread"></span>
+        </button>
+        <button class="rail-btn" data-tab="contacts" title="通讯录">
+          <svg viewBox="0 0 24 24"><use href="#i-contacts"/></svg>
+        </button>
+        <button class="rail-btn" data-tab="discover" title="发现">
+          <svg viewBox="0 0 24 24"><use href="#i-compass"/></svg>
+        </button>
+        <button class="rail-btn" data-tab="me" title="我">
+          <svg viewBox="0 0 24 24"><use href="#i-user"/></svg>
+        </button>
+      </nav>
+      <div class="rail-bottom">
+        <button class="rail-btn" id="logoutBtn" title="退出登录">
+          <svg viewBox="0 0 24 24"><use href="#i-logout"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <section class="panel">
+      <header class="panel-head">
+        <div class="panel-top">
+          <h2 id="panelTitle">微信</h2>
+          <button class="icon-btn" id="newChatBtn" title="发起群聊">
+            <svg viewBox="0 0 24 24"><use href="#i-plus"/></svg>
+          </button>
+        </div>
+        <label class="search">
+          <svg viewBox="0 0 24 24"><use href="#i-search"/></svg>
+          <input id="searchInput" placeholder="搜索" autocomplete="off" maxlength="30">
+        </label>
+      </header>
+      <div class="panel-body" id="panelBody"></div>
+    </section>
+
+    <main class="main">
+      <section class="chat-pane" id="chatPane">
+        <header class="chat-head" id="chatHead"></header>
+        <div class="msg-list" id="msgList"></div>
+        <div class="composer">
+          <div class="composer-toolbar">
+            <button class="tool-btn" id="emojiBtn" title="表情">
+              <svg viewBox="0 0 24 24"><use href="#i-smile"/></svg>
+            </button>
+            <button class="tool-btn" id="imageBtn" title="发送图片">
+              <svg viewBox="0 0 24 24"><use href="#i-image"/></svg>
+            </button>
+            <input type="file" id="imageInput" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+            <span class="composer-tip">Enter 发送 · Shift + Enter 换行</span>
+          </div>
+          <textarea id="msgInput" rows="1" maxlength="2000" placeholder="输入消息…"></textarea>
+          <div class="composer-bottom">
+            <span class="send-status" id="sendStatus"></span>
+            <button class="send-btn" id="sendBtn">发送</button>
+          </div>
+          <div class="emoji-pop hidden" id="emojiPop"></div>
+        </div>
+      </section>
+
+      <section class="page-pane hidden" id="pagePane"></section>
+    </main>
+  </div>
+
+  <!-- 群聊创建弹窗 -->
+  <div class="modal-mask hidden" id="modalMask">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header class="modal-head">
+        <h3 id="modalTitle">发起群聊</h3>
+        <button class="icon-btn" id="modalClose" title="关闭">✕</button>
+      </header>
+      <div class="modal-body">
+        <label class="modal-field">
+          <span>群聊名称（可选）</span>
+          <input id="groupName" maxlength="20" placeholder="不填则使用成员昵称">
+        </label>
+        <p class="modal-label">选择联系人 <span id="groupCount">已选 0 人</span></p>
+        <div class="pick-list" id="groupPickList"></div>
+      </div>
+      <footer class="modal-foot">
+        <button class="btn-ghost" id="groupCancel">取消</button>
+        <button class="btn-primary" id="groupCreate">创建群聊</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 图片预览 -->
+  <div class="lightbox hidden" id="lightbox">
+    <img id="lightboxImg" alt="图片预览">
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="localapi.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

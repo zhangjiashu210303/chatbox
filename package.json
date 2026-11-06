@@ -1,0 +1,12 @@
+{
+  "name": "wechat-web",
+  "version": "2.0.0",
+  "private": true,
+  "description": "类微信网页版：注册、登录、单聊、群聊、朋友圈，纯静态可部署到 GitHub Pages",
+  "main": "preview.js",
+  "scripts": {
+    "start": "node preview.js"
+  },
+  "keywords": ["wechat", "chat", "github-pages", "vanilla-js"],
+  "license": "MIT"
+}
