@@ -140,15 +140,38 @@
     if (issuesCache.promise) return issuesCache.promise;
 
     issuesCache.promise = (async () => {
-      const headers = {};
-      if (issuesCache.etag) headers['If-None-Match'] = issuesCache.etag;
-      const res = await gh(`/repos/${REPO}/issues?state=all&per_page=100&sort=updated&direction=desc`, { headers });
-      if (res.notModified && issuesCache.items) {
-        issuesCache.at = now();
-        return issuesCache.items;
+      let items = [];
+      let etag = null;
+      let page = 1;
+
+      while (page <= 10) {
+        const headers = {};
+        if (page === 1 && issuesCache.etag) headers['If-None-Match'] = issuesCache.etag;
+        const res = await gh(
+          `/repos/${REPO}/issues?state=all&per_page=100&sort=updated&direction=desc&page=${page}`,
+          { headers }
+        );
+        if (page === 1) {
+          if (res.notModified && issuesCache.items) {
+            issuesCache.at = now();
+            return issuesCache.items;
+          }
+          etag = res.etag || null;
+        }
+        const batch = (res.data || []).filter((i) => !i.pull_request);
+        items.push(...batch);
+        if (batch.length < 100) break;
+        page++;
       }
-      const items = (res.data || []).filter((i) => !i.pull_request);
-      issuesCache = { items, etag: res.etag || null, at: now(), promise: null };
+
+      const seen = new Set();
+      items = items.filter((i) => {
+        if (seen.has(i.number)) return false;
+        seen.add(i.number);
+        return true;
+      });
+
+      issuesCache = { items, etag, at: now(), promise: null };
       return items;
     })();
 
@@ -161,6 +184,7 @@
 
   function invalidateIssues() {
     issuesCache.at = 0;
+    issuesCache.etag = null;
   }
 
   function rememberIssue(issue) {
@@ -357,18 +381,45 @@
 
   /* ---------------------------- 会话 ---------------------------- */
 
+  function uniqueBy(list, keyOf) {
+    const seen = new Set();
+    return list.filter((item) => {
+      const key = keyOf(item);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  // 记录本会话刚创建/修改的对象，避免 GitHub 列表接口短暂延迟导致“内容不存在”
+  const knownChats = new Map();
+  const knownMoments = new Map();
+
   function chatsFromIssues(items) {
-    return items
-      .filter((i) => i.state !== 'closed' && i.title.startsWith(CHAT_PREFIX))
-      .map((i) => ({ issue: i, chat: decodeBody(i.body, MARK.chat) }))
-      .filter((x) => x.chat && Array.isArray(x.chat.members));
+    const list = uniqueBy(
+      items
+        .filter((i) => i.state !== 'closed' && i.title.startsWith(CHAT_PREFIX))
+        .map((i) => ({ issue: i, chat: decodeBody(i.body, MARK.chat) }))
+        .filter((x) => x.chat && Array.isArray(x.chat.members)),
+      (x) =>
+        x.chat.type === 'direct'
+          ? `direct:${[...x.chat.members].sort().join(':')}`
+          : `chat:${x.chat.id}`
+    );
+    list.forEach((x) => knownChats.set(x.chat.id, x));
+    return list;
   }
 
   function momentsFromIssues(items) {
-    return items
-      .filter((i) => i.state !== 'closed' && i.title.startsWith(MOMENT_PREFIX))
-      .map((i) => ({ issue: i, moment: decodeBody(i.body, MARK.moment) }))
-      .filter((x) => x.moment);
+    const list = uniqueBy(
+      items
+        .filter((i) => i.state !== 'closed' && i.title.startsWith(MOMENT_PREFIX))
+        .map((i) => ({ issue: i, moment: decodeBody(i.body, MARK.moment) }))
+        .filter((x) => x.moment),
+      (x) => x.moment.id
+    );
+    list.forEach((x) => knownMoments.set(x.moment.id, x));
+    return list;
   }
 
   function summarizeChat(chat, meId, data) {
@@ -486,8 +537,10 @@
   /* ---------------------------- 引导演示数据 ---------------------------- */
 
   let bootstrapPromise = null;
+  let bootstrapped = false;
 
   async function bootstrap() {
+    if (bootstrapped) return true;
     if (bootstrapPromise) return bootstrapPromise;
     bootstrapPromise = (async () => {
       const data = await loadRegistry();
@@ -591,6 +644,7 @@
       }
 
       invalidateIssues();
+      bootstrapped = true;
       return true;
     })();
 
@@ -736,6 +790,7 @@
         };
         const issue = await createIssue(`${CHAT_PREFIX}${chat.id}`, encodeBody(MARK.chat, chat));
         found = { issue, chat };
+        knownChats.set(chat.id, found);
       }
       return { chat: summarizeChat(found.chat, me.id, data) };
     }
@@ -766,6 +821,7 @@
         lastMessage: null,
       };
       const issue = await createIssue(`${CHAT_PREFIX}${chat.id}`, encodeBody(MARK.chat, chat));
+      knownChats.set(chat.id, { issue, chat });
       return { chat: summarizeChat(chat, me.id, data) };
     }
 
@@ -775,7 +831,7 @@
       const chatId = chatMatch[1];
       const action = chatMatch[2] || '';
       const items = await listIssues(true);
-      const found = chatsFromIssues(items).find((x) => x.chat.id === chatId);
+      const found = chatsFromIssues(items).find((x) => x.chat.id === chatId) || knownChats.get(chatId);
       if (!found || !found.chat.members.includes(me.id)) throw fail(404, '会话不存在');
       const chat = found.chat;
 
@@ -847,7 +903,8 @@
       const content = clean(body.content, 500);
       if (!content) throw fail(400, '内容不能为空');
       const moment = { id: slug(), userId: me.id, content, createdAt: now(), likes: [], comments: [] };
-      await createIssue(`${MOMENT_PREFIX}${moment.id}`, encodeBody(MARK.moment, moment));
+      const issue = await createIssue(`${MOMENT_PREFIX}${moment.id}`, encodeBody(MARK.moment, moment));
+      knownMoments.set(moment.id, { issue, moment });
       invalidateIssues();
       return { moment: momentView(moment, me.id, data) };
     }
@@ -855,13 +912,14 @@
     const likeMatch = pathname.match(/^\/api\/moments\/([a-z0-9]+)\/like$/);
     if (likeMatch && method === 'POST') {
       const items = await listIssues(true);
-      const found = momentsFromIssues(items).find((x) => x.moment.id === likeMatch[1]);
+      const found = momentsFromIssues(items).find((x) => x.moment.id === likeMatch[1]) || knownMoments.get(likeMatch[1]);
       if (!found) throw fail(404, '内容不存在');
       const moment = found.moment;
       moment.likes = moment.likes || [];
       if (moment.likes.includes(me.id)) moment.likes = moment.likes.filter((id) => id !== me.id);
       else moment.likes.push(me.id);
-      await patchIssue(found.issue.number, { body: encodeBody(MARK.moment, moment) });
+      const patched = await patchIssue(found.issue.number, { body: encodeBody(MARK.moment, moment) });
+      knownMoments.set(moment.id, { issue: patched, moment });
       invalidateIssues();
       return {
         likes: moment.likes.map((id) => findUser(data, id)?.nickname).filter(Boolean),
@@ -872,7 +930,7 @@
     const commentMatch = pathname.match(/^\/api\/moments\/([a-z0-9]+)\/comment$/);
     if (commentMatch && method === 'POST') {
       const items = await listIssues(true);
-      const found = momentsFromIssues(items).find((x) => x.moment.id === commentMatch[1]);
+      const found = momentsFromIssues(items).find((x) => x.moment.id === commentMatch[1]) || knownMoments.get(commentMatch[1]);
       if (!found) throw fail(404, '内容不存在');
       const content = clean(body.content, 200);
       if (!content) throw fail(400, '评论不能为空');
@@ -880,7 +938,8 @@
       moment.comments = moment.comments || [];
       const comment = { id: slug(), userId: me.id, content, createdAt: now() };
       moment.comments.push(comment);
-      await patchIssue(found.issue.number, { body: encodeBody(MARK.moment, moment) });
+      const patched = await patchIssue(found.issue.number, { body: encodeBody(MARK.moment, moment) });
+      knownMoments.set(moment.id, { issue: patched, moment });
       invalidateIssues();
       return { comment: { ...comment, author: me.nickname } };
     }

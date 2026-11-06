@@ -431,6 +431,7 @@ function bindApp() {
 
   window.addEventListener('beforeunload', () => {
     if (state.es) state.es.close();
+    if (state.busOff) state.busOff();
   });
 }
 
@@ -639,7 +640,7 @@ function renderMain() {
         <svg viewBox="0 0 100 100"><use href="#i-logo"/></svg>
       </div>
       <h3>${state.tab === 'contacts' ? '选择一个联系人开始聊天' : '选择一个会话开始聊天'}</h3>
-      <p>${state.tab === 'contacts' ? '点击通讯录里的好友，即可发送消息' : '消息会实时送达，支持文字、表情与图片'}</p>
+      <p>${state.tab === 'contacts' ? '点击通讯录里的好友，即可发送消息' : IS_CLOUD ? '消息会通过 GitHub Issues 实时同步' : '消息会实时送达，支持文字、表情与图片'}</p>
     </div>`;
 }
 
@@ -658,8 +659,11 @@ async function refreshChats() {
     const { chats } = await api('/api/chats');
     state.chats = chats;
     updateBadges();
-    if (state.tab === 'chats') renderPanel();
-    renderMain();
+    if (state.tab === 'chats' || state.tab === 'contacts') renderPanel();
+    if (state.tab === 'chats' && state.currentChatId) {
+      const chat = state.chats.find((c) => c.id === state.currentChatId);
+      if (chat) renderChatHeader(chat);
+    }
   } catch (err) {
     console.error(err);
   }
@@ -832,7 +836,12 @@ async function sendText() {
   const chatId = state.currentChatId;
   input.value = '';
   autoResize(input);
-  await postMessage(chatId, 'text', content);
+  const ok = await postMessage(chatId, 'text', content);
+  if (!ok) {
+    input.value = content;
+    autoResize(input);
+    input.focus();
+  }
 }
 
 async function postMessage(chatId, type, content) {
@@ -845,9 +854,12 @@ async function postMessage(chatId, type, content) {
     appendMessage(chatId, message);
     setSendStatus('已发送');
     setTimeout(() => setSendStatus(''), 1500);
+    return true;
   } catch (err) {
     setSendStatus('发送失败');
     toast(err.message, 'error');
+    setTimeout(() => setSendStatus(''), 3000);
+    return false;
   }
 }
 
@@ -1012,7 +1024,7 @@ function handleEvent(payload) {
     case 'moment:new': {
       if (!state.moments.some((m) => m.id === payload.moment.id)) {
         state.moments.unshift(payload.moment);
-        if (state.tab === 'discover' && !state.momentsLoading) renderMomentsPage();
+        if (state.tab === 'discover' && !momentsLoading) renderMomentsPage();
       }
       break;
     }
@@ -1024,7 +1036,15 @@ function handleEvent(payload) {
         api(`/api/chats/${chatId}/messages?limit=200`)
           .then((data) => {
             if (state.currentChatId !== chatId) return;
-            state.messages[chatId] = data.messages;
+            // GitHub 评论偶尔有短暂延迟：把本地刚发送、服务端尚未返回的消息先保留
+            const fetched = data.messages || [];
+            const ids = new Set(fetched.map((m) => m.id));
+            const pending = (state.messages[chatId] || []).filter(
+              (m) => !ids.has(m.id) && m.senderId === state.me.id && Date.now() - m.createdAt < 120000
+            );
+            state.messages[chatId] = pending.length
+              ? [...fetched, ...pending].sort((a, b) => a.createdAt - b.createdAt)
+              : fetched;
             replaceChat(data.chat);
             renderChatHeader(data.chat);
             renderMessages();
@@ -1096,8 +1116,16 @@ async function createGroup() {
 
 let momentsLoading = false;
 
+function hasMomentsDraft() {
+  const pane = $('#pagePane');
+  if (!pane) return false;
+  if (pane.querySelector('.moment-comment-form:not(.hidden)')) return true;
+  return [...pane.querySelectorAll('textarea, input')].some((el) => el.value.trim() !== '');
+}
+
 async function loadMoments() {
   momentsLoading = true;
+  const before = JSON.stringify(state.moments);
   if (!state.moments.length) renderMomentsPage();
   try {
     const { moments } = await api('/api/moments');
@@ -1106,7 +1134,8 @@ async function loadMoments() {
     console.error(err);
   } finally {
     momentsLoading = false;
-    if (state.tab === 'discover') renderMomentsPage();
+    const changed = JSON.stringify(state.moments) !== before;
+    if (state.tab === 'discover' && changed && !hasMomentsDraft()) renderMomentsPage();
   }
 }
 
@@ -1299,7 +1328,7 @@ function renderProfilePage() {
         <div class="profile-meta">
           账号 ID：${esc(me.id)}<br>
           注册时间：${new Date(me.createdAt).toLocaleString('zh-CN')}<br>
-          数据存储在本机服务器，清除浏览器数据不会删除账号。
+          ${IS_CLOUD ? '账号和消息存储在 GitHub Issues 中，换设备登录即可同步。' : '数据存储在本机浏览器中，清除浏览器数据会删除账号。'}
         </div>
       </div>
     </div>`;
@@ -1366,13 +1395,21 @@ async function bootstrap() {
     $('#authView').classList.add('hidden');
     $('#appView').classList.remove('hidden');
     renderMeBits();
+    if (IS_CLOUD) {
+      const imageBtn = $('#imageBtn');
+      if (imageBtn) imageBtn.classList.add('hidden');
+    }
     switchTab('chats');
     await Promise.all([refreshChats(), refreshContacts()]);
     connectEvents();
   } catch (err) {
     console.error(err);
-    endSession(true);
-    $('#authView').classList.remove('hidden');
+    if (err.status === 401) {
+      endSession(true);
+    } else {
+      $('#authView').classList.remove('hidden');
+      toast(err.message || '加载失败，请刷新重试', 'error');
+    }
   }
 }
 
