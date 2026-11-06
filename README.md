@@ -2,7 +2,7 @@
 
 一个**类微信**的网页聊天应用，使用原生 HTML / CSS / JavaScript 编写，**零依赖、纯静态**，可以直接部署到 **GitHub Pages**。
 
-> 在线体验：把本仓库部署到 GitHub Pages 后即可打开。
+> 在线体验：<https://zhangjiashu210303.github.io/chatbox/>
 
 ## ✨ 功能
 
